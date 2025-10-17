@@ -273,88 +273,105 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
       controllers[player.id!] = TextEditingController();
     }
 
+    String? errorText;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(_isPredictionPhase
-                ? 'Runde $_currentRound - Ansagen'
-                : 'Runde $_currentRound - Stiche'),
-            const SizedBox(height: 4),
-            Text(
-              'Runde $_currentRound von $_maxRounds ($_currentRound Karten)',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.normal,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
+      builder: (context) => StatefulBuilder(
+        builder: (dialogContext, setState) => AlertDialog(
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
-            children: widget.players.map((player) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: TextField(
-                  controller: controllers[player.id!],
-                  decoration: InputDecoration(
-                    labelText: player.name,
-                    border: const OutlineInputBorder(),
-                    hintText: _isPredictionPhase
-                        ? 'Ansage (0-$_currentRound)'
-                        : 'Tatsächliche Stiche (0-$_currentRound)',
-                  ),
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
+            children: [
+              Text(_isPredictionPhase
+                  ? 'Runde $_currentRound - Ansagen'
+                  : 'Runde $_currentRound - Stiche'),
+              const SizedBox(height: 4),
+              Text(
+                'Runde $_currentRound von $_maxRounds ($_currentRound Karten)',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.normal,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-              );
-            }).toList(),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ...widget.players.map((player) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: TextField(
+                    controller: controllers[player.id!],
+                    decoration: InputDecoration(
+                      labelText: player.name,
+                      border: const OutlineInputBorder(),
+                      hintText: _isPredictionPhase
+                          ? 'Ansage (0-$_currentRound)'
+                          : 'Tatsächliche Stiche (0-$_currentRound)',
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                  ),
+                );
+              }).toList(),
+              if (errorText != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    errorText!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              final data = <int, int>{};
-              bool allValid = true;
-
-              for (var entry in controllers.entries) {
-                final value = int.tryParse(entry.value.text.trim());
-                if (value == null) {
-                  allValid = false;
-                  break;
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final data = <int, int>{};
+                bool allValid = true;
+                for (var entry in controllers.entries) {
+                  final value = int.tryParse(entry.value.text.trim());
+                  if (value == null) {
+                    allValid = false;
+                    break;
+                  }
+                  data[entry.key] = value;
                 }
-                data[entry.key] = value;
-              }
-
-              if (allValid) {
+                if (!allValid) {
+                  errorText = 'Bitte alle Felder ausfüllen';
+                  setState(() {});
+                  return;
+                }
+                if (!_isPredictionPhase) {
+                  final sum = data.values.reduce((a, b) => a + b);
+                  if (sum != _currentRound) {
+                    errorText =
+                        'Die Summe der Stiche muss $_currentRound ergeben!';
+                    setState(() {});
+                    return;
+                  }
+                }
+                errorText = null;
+                setState(() {});
                 if (_isPredictionPhase) {
                   _savePredictions(data);
                 } else {
                   _saveActuals(data);
                 }
-                Navigator.pop(context);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Bitte alle Felder ausfüllen'),
-                  ),
-                );
-              }
-            },
-            child: const Text('Speichern'),
-          ),
-        ],
+                Navigator.pop(dialogContext);
+              },
+              child: const Text('Speichern'),
+            ),
+          ],
+        ),
       ),
     );
   }

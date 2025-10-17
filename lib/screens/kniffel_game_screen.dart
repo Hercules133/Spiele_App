@@ -22,7 +22,7 @@ class KniffelGameScreen extends StatefulWidget {
 
 class _KniffelGameScreenState extends State<KniffelGameScreen> {
   final _dbService = DatabaseService.instance;
-  int _currentPlayerIndex = 0;
+  // int _currentPlayerIndex = 0; // Nicht mehr benötigt
   final Map<int, Map<String, int?>> _playerScores = {};
   bool _isLoading = true;
 
@@ -119,7 +119,9 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
   }
 
   Future<void> _saveScore(String category, int score) async {
-    final playerId = widget.players[_currentPlayerIndex].id!;
+    // Spieler explizit übergeben
+    // Diese Methode wird jetzt mit playerId aufgerufen
+    final playerId = playerIdForDialog;
 
     if (_playerScores[playerId]![category] != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -142,11 +144,6 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
 
     setState(() {
       _playerScores[playerId]![category] = score;
-
-      // Move to next player
-      if (!_isGameComplete()) {
-        _currentPlayerIndex = (_currentPlayerIndex + 1) % widget.players.length;
-      }
     });
 
     if (_isGameComplete()) {
@@ -232,40 +229,98 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
     );
   }
 
-  void _showScoreDialog(String category) {
+  void _showScoreDialog(String category, int playerId) {
     final controller = TextEditingController();
+    String? errorText;
+    // Feste Punkte für bestimmte Kategorien
+    final fixedPoints = {
+      'Full House': 25,
+      'Kleine Straße': 30,
+      'Große Straße': 40,
+      'Kniffel': 50,
+    };
+    bool isFixedCategory = fixedPoints.containsKey(category);
+    void save(BuildContext dialogContext) {
+      int? score;
+      if (isFixedCategory) {
+        score = fixedPoints[category];
+      } else {
+        score = int.tryParse(controller.text.trim());
+        if (score == null) {
+          errorText = 'Bitte eine gültige Zahl eingeben.';
+          (dialogContext as Element).markNeedsBuild();
+          return;
+        }
+        // Validierung für Einser bis Sechser
+        final upperCategories = _categories.sublist(0, 6);
+        if (upperCategories.contains(category)) {
+          final augenzahl = upperCategories.indexOf(category) + 1;
+          if (score % augenzahl != 0) {
+            errorText = 'Die Zahl muss durch $augenzahl teilbar sein!';
+            (dialogContext as Element).markNeedsBuild();
+            return;
+          }
+          if (score > 5 * augenzahl) {
+            errorText = 'Maximal ${5 * augenzahl} Punkte möglich (5 Würfel)!';
+            (dialogContext as Element).markNeedsBuild();
+            return;
+          }
+        }
+      }
+      playerIdForDialog = playerId;
+      _saveScore(category, score!);
+      Navigator.pop(dialogContext);
+    }
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(category),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Punkte',
-            border: OutlineInputBorder(),
-          ),
-          keyboardType: TextInputType.number,
-          autofocus: true,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: Text(
+              '$category – ${widget.players.firstWhere((p) => p.id == playerId).name}'),
+          content: isFixedCategory
+              ? Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text(category == 'Kniffel'
+                      ? 'Wenn erfüllt, werden automatisch 50 Punkte eingetragen.'
+                      : 'Wenn erfüllt, werden automatisch ${fixedPoints[category]} Punkte eingetragen.'),
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: controller,
+                      decoration: InputDecoration(
+                        labelText: 'Punkte',
+                        border: const OutlineInputBorder(),
+                        errorText: errorText,
+                      ),
+                      keyboardType: TextInputType.number,
+                      autofocus: true,
+                    ),
+                  ],
+                ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Abbrechen'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                errorText = null;
+                setState(() {});
+                save(dialogContext);
+              },
+              child: Text(isFixedCategory ? 'Erfüllt' : 'Speichern'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Abbrechen'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final score = int.tryParse(controller.text.trim());
-              if (score != null) {
-                _saveScore(category, score);
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('Speichern'),
-          ),
-        ],
       ),
     );
   }
+
+  // Hilfsvariable, um playerId an _saveScore zu übergeben
+  int playerIdForDialog = -1;
 
   @override
   Widget build(BuildContext context) {
@@ -274,8 +329,6 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
         body: Center(child: CircularProgressIndicator()),
       );
     }
-
-    final currentPlayer = widget.players[_currentPlayerIndex];
 
     return Scaffold(
       appBar: AppBar(
@@ -289,10 +342,10 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               color: Theme.of(context).colorScheme.primaryContainer,
-              child: Text(
-                'Am Zug: ${currentPlayer.name}',
-                style: const TextStyle(
-                  fontSize: 20,
+              child: const Text(
+                'Klicke auf ein leeres Feld, um Punkte einzutragen.',
+                style: TextStyle(
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
@@ -330,15 +383,16 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
                           cells: [
                             DataCell(
                               Text(category),
-                              onTap: !_isGameComplete()
-                                  ? () => _showScoreDialog(category)
-                                  : null,
                             ),
                             ...widget.players.map((player) {
                               final score =
                                   _playerScores[player.id!]![category];
                               return DataCell(
                                 Text(score?.toString() ?? '-'),
+                                onTap: !_isGameComplete() && score == null
+                                    ? () =>
+                                        _showScoreDialog(category, player.id!)
+                                    : null,
                               );
                             }),
                           ],
