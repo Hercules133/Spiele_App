@@ -9,6 +9,8 @@ Eine Flutter-App zur Punkteverwaltung für Gesellschaftsspiele.
   - **Skyjo**: Rundenbasierte Punkteeingabe
   - **Kniffel**: Vollständige Scorecard mit allen Kategorien
   - **Wizard**: Stichansagen und automatische Punkteberechnung
+- **Spiel-History**: Laufende Spiele fortsetzen und beendete Spiele einsehen
+- **Dark Mode**: Heller und dunkler Modus mit Systemintegration
 - **Bestenlisten**: Statistiken und Rankings für jedes Spiel
 - **Lokale Datenspeicherung**: Alle Daten werden lokal auf dem Gerät gespeichert (SQLite)
 - **Cross-Platform**: Läuft auf Android, iOS, Web, Linux und Windows
@@ -79,9 +81,11 @@ lib/
    - Wähle ein Spiel (Skyjo, Kniffel oder Wizard)
    - Wähle mindestens 2 Spieler aus
    - Klicke auf "Spiel starten"
-3. **Punkte eintragen**: Trage die Punkte für jede Runde/Kategorie ein
-4. **Spiel beenden**: Klicke auf "Spiel beenden" um das Endergebnis zu sehen
-5. **Bestenlisten**: Schaue dir die Statistiken und Rankings in "Bestenlisten" an
+3. **Spiel fortsetzen**: Nutze "Spiel-History" um laufende Spiele fortzusetzen
+4. **Punkte eintragen**: Trage die Punkte für jede Runde/Kategorie ein
+5. **Spiel beenden**: Klicke auf "Spiel beenden" um das Endergebnis zu sehen
+6. **Bestenlisten**: Schaue dir die Statistiken und Rankings in "Bestenlisten" an
+7. **Dark Mode**: Aktiviere den dunklen Modus in den Einstellungen
 
 ## Spielregeln in der App
 
@@ -107,13 +111,13 @@ lib/
 - **Flutter**: UI Framework
 - **SQLite**: Lokale Datenbank (via sqflite)
 - **Material Design 3**: UI Design
+- **Shared Preferences**: Einstellungsspeicherung
 
 ## Zukünftige Erweiterungen
 
 - Cloud-Synchronisation
 - Weitere Spiele hinzufügen
 - Erweiterte Statistiken
-- Spielhistorie
 - Export/Import von Daten
 
 ## Lizenz

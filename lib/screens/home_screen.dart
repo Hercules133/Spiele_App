@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'players_screen.dart';
 import 'game_selection_screen.dart';
 import 'leaderboard_screen.dart';
+import 'game_history_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final Function(ThemeMode) onThemeModeChanged;
+
+  const HomeScreen({super.key, required this.onThemeModeChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -12,6 +16,22 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Spiele Punkteverwaltung'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => SettingsScreen(
+                    onThemeModeChanged: onThemeModeChanged,
+                  ),
+                ),
+              );
+            },
+            tooltip: 'Einstellungen',
+          ),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(
@@ -36,6 +56,19 @@ class HomeScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const GameSelectionScreen(),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                _MenuButton(
+                  icon: Icons.history,
+                  label: 'Spiel-History',
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const GameHistoryScreen(),
                       ),
                     );
                   },

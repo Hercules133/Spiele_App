@@ -1,13 +1,18 @@
 # TODO - Zukünftige Features
 
+## ✅ Abgeschlossen (v1.0)
+
+- [x] Dark Mode Support ✨
+- [x] Spiel-History (laufende Spiele fortsetzen) ✨
+
 ## Kurzfristig (v1.1)
 
 - [ ] Icon und Splash Screen hinzufügen
-- [ ] Dark Mode Support
 - [ ] Spieler-Avatars/Farben
-- [ ] Spiel-History (laufende Spiele fortsetzen)
 - [ ] Bestenlisten: Filter nach Zeitraum
 - [ ] Export von Spielständen (CSV/JSON)
+- [ ] Unit-Tests mit Mocking vervollständigen
+- [ ] Layout-Overflow im Home Screen beheben
 
 ## Mittelfristig (v1.2)
 

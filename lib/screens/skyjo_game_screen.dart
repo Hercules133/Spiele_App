@@ -264,14 +264,23 @@ class _SkyjoGameScreenState extends State<SkyjoGameScreen> {
                         ),
                       // Total row
                       DataRow(
-                        color: MaterialStateProperty.all(
-                          Colors.amber[100],
-                        ),
+                        color:
+                            WidgetStateProperty.resolveWith<Color?>((states) {
+                          return Theme.of(context).brightness == Brightness.dark
+                              ? Colors.amber[900]?.withOpacity(0.3)
+                              : Colors.amber[100];
+                        }),
                         cells: [
-                          const DataCell(
+                          DataCell(
                             Text(
                               'Gesamt',
-                              style: TextStyle(fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).brightness ==
+                                        Brightness.dark
+                                    ? Colors.amber[200]
+                                    : Colors.amber[900],
+                              ),
                             ),
                           ),
                           ...widget.players.map((player) {
@@ -279,8 +288,12 @@ class _SkyjoGameScreenState extends State<SkyjoGameScreen> {
                             return DataCell(
                               Text(
                                 '$total',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.amber[200]
+                                      : Colors.amber[900],
                                 ),
                               ),
                             );
@@ -297,10 +310,10 @@ class _SkyjoGameScreenState extends State<SkyjoGameScreen> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
                   blurRadius: 4,
                   offset: const Offset(0, -2),
                 ),

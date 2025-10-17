@@ -60,13 +60,13 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
 
   Future<void> _loadGameData() async {
     setState(() => _isLoading = true);
-    
+
     for (var player in widget.players) {
       final scores = await _dbService.getPlayerScoresForGame(
         widget.gameId,
         player.id!,
       );
-      
+
       for (var score in scores) {
         if (score.metadata != null) {
           final metadata = jsonDecode(score.metadata!);
@@ -75,7 +75,7 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
         }
       }
     }
-    
+
     setState(() => _isLoading = false);
   }
 
@@ -120,7 +120,7 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
 
   Future<void> _saveScore(String category, int score) async {
     final playerId = widget.players[_currentPlayerIndex].id!;
-    
+
     if (_playerScores[playerId]![category] != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Diese Kategorie ist bereits belegt!')),
@@ -129,7 +129,7 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
     }
 
     final metadata = jsonEncode({'category': category});
-    
+
     await _dbService.createGameScore(
       GameScore(
         gameId: widget.gameId,
@@ -142,7 +142,7 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
 
     setState(() {
       _playerScores[playerId]![category] = score;
-      
+
       // Move to next player
       if (!_isGameComplete()) {
         _currentPlayerIndex = (_currentPlayerIndex + 1) % widget.players.length;
@@ -180,9 +180,8 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
       barrierDismissible: false,
       builder: (context) {
         final sortedPlayers = [...widget.players];
-        sortedPlayers.sort((a, b) => 
-          _getTotalScore(b.id!).compareTo(_getTotalScore(a.id!))
-        );
+        sortedPlayers.sort(
+            (a, b) => _getTotalScore(b.id!).compareTo(_getTotalScore(a.id!)));
 
         return AlertDialog(
           title: const Text('Spiel beendet!'),
@@ -336,7 +335,8 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
                                   : null,
                             ),
                             ...widget.players.map((player) {
-                              final score = _playerScores[player.id!]![category];
+                              final score =
+                                  _playerScores[player.id!]![category];
                               return DataCell(
                                 Text(score?.toString() ?? '-'),
                               );
@@ -346,7 +346,12 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
                       }),
                       // Upper section total
                       DataRow(
-                        color: MaterialStateProperty.all(Colors.blue[50]),
+                        color:
+                            WidgetStateProperty.resolveWith<Color?>((states) {
+                          return Theme.of(context).brightness == Brightness.dark
+                              ? Colors.blue[900]?.withOpacity(0.3)
+                              : Colors.blue[50];
+                        }),
                         cells: [
                           const DataCell(
                             Text(
@@ -359,7 +364,8 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
                             return DataCell(
                               Text(
                                 '$total',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                             );
                           }),
@@ -367,7 +373,12 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
                       ),
                       // Bonus
                       DataRow(
-                        color: MaterialStateProperty.all(Colors.green[50]),
+                        color:
+                            WidgetStateProperty.resolveWith<Color?>((states) {
+                          return Theme.of(context).brightness == Brightness.dark
+                              ? Colors.green[900]?.withOpacity(0.3)
+                              : Colors.green[50];
+                        }),
                         cells: [
                           const DataCell(
                             Text(
@@ -382,7 +393,12 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
                                 bonus > 0 ? '+$bonus' : '-',
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: bonus > 0 ? Colors.green : null,
+                                  color: bonus > 0
+                                      ? (Theme.of(context).brightness ==
+                                              Brightness.dark
+                                          ? Colors.green[300]
+                                          : Colors.green[700])
+                                      : null,
                                 ),
                               ),
                             );
@@ -391,7 +407,12 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
                       ),
                       // Lower section total
                       DataRow(
-                        color: MaterialStateProperty.all(Colors.blue[50]),
+                        color:
+                            WidgetStateProperty.resolveWith<Color?>((states) {
+                          return Theme.of(context).brightness == Brightness.dark
+                              ? Colors.blue[900]?.withOpacity(0.3)
+                              : Colors.blue[50];
+                        }),
                         cells: [
                           const DataCell(
                             Text(
@@ -404,7 +425,8 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
                             return DataCell(
                               Text(
                                 '$total',
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                             );
                           }),
@@ -412,7 +434,12 @@ class _KniffelGameScreenState extends State<KniffelGameScreen> {
                       ),
                       // Total
                       DataRow(
-                        color: MaterialStateProperty.all(Colors.amber[100]),
+                        color:
+                            WidgetStateProperty.resolveWith<Color?>((states) {
+                          return Theme.of(context).brightness == Brightness.dark
+                              ? Colors.amber[900]?.withOpacity(0.3)
+                              : Colors.amber[100];
+                        }),
                         cells: [
                           const DataCell(
                             Text(

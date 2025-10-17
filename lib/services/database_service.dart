@@ -191,6 +191,17 @@ class DatabaseService {
     return result.map((map) => GamePlayer.fromMap(map)).toList();
   }
 
+  Future<List<Player>> getPlayersForGame(int gameId) async {
+    final db = await database;
+    final result = await db.rawQuery('''
+      SELECT p.* FROM players p
+      INNER JOIN game_players gp ON p.id = gp.player_id
+      WHERE gp.game_id = ?
+      ORDER BY gp.player_order ASC
+    ''', [gameId]);
+    return result.map((map) => Player.fromMap(map)).toList();
+  }
+
   Future<int> updateGamePlayer(GamePlayer gamePlayer) async {
     final db = await database;
     return await db.update(

@@ -289,7 +289,7 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.normal,
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -409,7 +409,7 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
                   '${_currentRound} Karten pro Spieler',
                   style: TextStyle(
                     fontSize: 16,
-                    color: Colors.grey[700],
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 12),
@@ -419,7 +419,8 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
                   child: LinearProgressIndicator(
                     value: _currentRound / _maxRounds,
                     minHeight: 10,
-                    backgroundColor: Colors.grey[300],
+                    backgroundColor:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       Theme.of(context).colorScheme.primary,
                     ),
@@ -433,22 +434,42 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              color: _isPredictionPhase ? Colors.blue[100] : Colors.orange[100],
+              color: _isPredictionPhase
+                  ? (Theme.of(context).brightness == Brightness.dark
+                      ? Colors.blue[900]?.withOpacity(0.5)
+                      : Colors.blue[100])
+                  : (Theme.of(context).brightness == Brightness.dark
+                      ? Colors.orange[900]?.withOpacity(0.5)
+                      : Colors.orange[100]),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     _isPredictionPhase ? Icons.psychology : Icons.edit,
                     size: 20,
+                    color: _isPredictionPhase
+                        ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.blue[200]
+                            : Colors.blue[900])
+                        : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.orange[200]
+                            : Colors.orange[900]),
                   ),
                   const SizedBox(width: 8),
                   Text(
                     _isPredictionPhase
                         ? 'Phase: Stiche ansagen'
                         : 'Phase: Stiche eintragen',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: _isPredictionPhase
+                          ? (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.blue[200]
+                              : Colors.blue[900])
+                          : (Theme.of(context).brightness == Brightness.dark
+                              ? Colors.orange[200]
+                              : Colors.orange[900]),
                     ),
                   ),
                 ],
@@ -485,7 +506,9 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
                                 'Σ ${_getTotalScore(player.id!)}',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: Colors.grey[600],
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -515,10 +538,17 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
                               }
 
                               Color? bgColor;
+                              Color? textColor;
                               if (data.actual != null) {
-                                bgColor = data.prediction == data.actual
+                                final isCorrect =
+                                    data.prediction == data.actual;
+                                bgColor = isCorrect
                                     ? Colors.green[100]
                                     : Colors.red[100];
+                                // Dunkler Text für helle Hintergründe (besserer Kontrast)
+                                textColor = isCorrect
+                                    ? Colors.green[900]
+                                    : Colors.red[900];
                               }
 
                               return DataCell(
@@ -528,6 +558,9 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
                                     child: Text(
                                       displayText,
                                       textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: textColor,
+                                      ),
                                     ),
                                   ),
                                 ),
