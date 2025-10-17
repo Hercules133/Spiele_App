@@ -25,13 +25,13 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
   final _dbService = DatabaseService.instance;
   int _currentRound = 1;
   int _maxRounds = 20;
-  
+
   // Map: playerId -> round -> {prediction, actual, score}
   final Map<int, Map<int, WizardRoundData>> _roundData = {};
-  
+
   bool _isLoading = true;
   bool _isPredictionPhase = true;
-  
+
   @override
   void initState() {
     super.initState();
@@ -53,13 +53,13 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
 
   Future<void> _loadGameData() async {
     setState(() => _isLoading = true);
-    
+
     for (var player in widget.players) {
       final scores = await _dbService.getPlayerScoresForGame(
         widget.gameId,
         player.id!,
       );
-      
+
       for (var score in scores) {
         if (score.metadata != null) {
           final metadata = jsonDecode(score.metadata!);
@@ -71,18 +71,19 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
         }
       }
     }
-    
+
     if (_roundData.values.any((data) => data.isNotEmpty)) {
       _currentRound = _roundData.values
-          .map((data) => data.keys.isEmpty ? 0 : data.keys.reduce((a, b) => a > b ? a : b))
+          .map((data) =>
+              data.keys.isEmpty ? 0 : data.keys.reduce((a, b) => a > b ? a : b))
           .reduce((a, b) => a > b ? a : b);
-      
+
       // Check if we're in prediction or actual phase
       final currentRoundData = _roundData.values
           .map((data) => data[_currentRound])
           .where((data) => data != null)
           .toList();
-      
+
       if (currentRoundData.length == widget.players.length) {
         if (currentRoundData.any((data) => data!.actual == null)) {
           _isPredictionPhase = false;
@@ -92,7 +93,7 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
         }
       }
     }
-    
+
     setState(() => _isLoading = false);
   }
 
@@ -108,12 +109,12 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
     for (var entry in predictions.entries) {
       final playerId = entry.key;
       final prediction = entry.value;
-      
+
       final metadata = jsonEncode({
         'prediction': prediction,
         'actual': null,
       });
-      
+
       await _dbService.createGameScore(
         GameScore(
           gameId: widget.gameId,
@@ -123,14 +124,14 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
           metadata: metadata,
         ),
       );
-      
+
       _roundData[playerId]![_currentRound] = WizardRoundData(
         prediction: prediction,
         actual: null,
         score: 0,
       );
     }
-    
+
     setState(() {
       _isPredictionPhase = false;
     });
@@ -141,7 +142,7 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
       final playerId = entry.key;
       final actual = entry.value;
       final roundData = _roundData[playerId]![_currentRound]!;
-      
+
       // Calculate score
       int score;
       if (roundData.prediction == actual) {
@@ -149,12 +150,12 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
       } else {
         score = -10 * (roundData.prediction - actual).abs();
       }
-      
+
       final metadata = jsonEncode({
         'prediction': roundData.prediction,
         'actual': actual,
       });
-      
+
       // Get the score record and update it
       final scores = await _dbService.getPlayerScoresForGame(
         widget.gameId,
@@ -163,21 +164,21 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
       final scoreRecord = scores.firstWhere(
         (s) => s.round == _currentRound && s.playerId == playerId,
       );
-      
+
       await _dbService.updateGameScore(
         scoreRecord.copyWith(
           score: score,
           metadata: metadata,
         ),
       );
-      
+
       _roundData[playerId]![_currentRound] = WizardRoundData(
         prediction: roundData.prediction,
         actual: actual,
         score: score,
       );
     }
-    
+
     setState(() {
       if (_currentRound < _maxRounds) {
         _currentRound++;
@@ -214,9 +215,8 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
       barrierDismissible: false,
       builder: (context) {
         final sortedPlayers = [...widget.players];
-        sortedPlayers.sort((a, b) => 
-          _getTotalScore(b.id!).compareTo(_getTotalScore(a.id!))
-        );
+        sortedPlayers.sort(
+            (a, b) => _getTotalScore(b.id!).compareTo(_getTotalScore(a.id!)));
 
         return AlertDialog(
           title: const Text('Spiel beendet!'),
@@ -276,20 +276,38 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(_isPredictionPhase
-            ? 'Runde $_currentRound - Ansagen'
-            : 'Runde $_currentRound - Stiche'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(_isPredictionPhase
+                ? 'Runde $_currentRound - Ansagen'
+                : 'Runde $_currentRound - Stiche'),
+            const SizedBox(height: 4),
+            Text(
+              'Runde $_currentRound von $_maxRounds ($_currentRound Karten)',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.normal,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: widget.players.map((player) {
               return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: 12),
                 child: TextField(
                   controller: controllers[player.id!],
                   decoration: InputDecoration(
                     labelText: player.name,
                     border: const OutlineInputBorder(),
+                    hintText: _isPredictionPhase
+                        ? 'Ansage (0-$_currentRound)'
+                        : 'Tatsächliche Stiche (0-$_currentRound)',
                   ),
                   keyboardType: TextInputType.number,
                   inputFormatters: [
@@ -309,7 +327,7 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
             onPressed: () {
               final data = <int, int>{};
               bool allValid = true;
-              
+
               for (var entry in controllers.entries) {
                 final value = int.tryParse(entry.value.text.trim());
                 if (value == null) {
@@ -318,7 +336,7 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
                 }
                 data[entry.key] = value;
               }
-              
+
               if (allValid) {
                 if (_isPredictionPhase) {
                   _savePredictions(data);
@@ -353,27 +371,87 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Wizard - Runde $_currentRound/$_maxRounds'),
+        title: const Text('Wizard'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: Column(
         children: [
+          // Rundeninformation - Hervorgehoben
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Theme.of(context).colorScheme.primaryContainer,
+                  Theme.of(context).colorScheme.secondaryContainer,
+                ],
+              ),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.casino, size: 28),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Runde $_currentRound von $_maxRounds',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${_currentRound} Karten pro Spieler',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[700],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Fortschrittsbalken
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: LinearProgressIndicator(
+                    value: _currentRound / _maxRounds,
+                    minHeight: 10,
+                    backgroundColor: Colors.grey[300],
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Phaseninfo
           if (!isGameFinished)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              color: _isPredictionPhase
-                  ? Colors.blue[100]
-                  : Colors.orange[100],
-              child: Text(
-                _isPredictionPhase
-                    ? 'Phase: Stiche ansagen'
-                    : 'Phase: Stiche eintragen',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
+              color: _isPredictionPhase ? Colors.blue[100] : Colors.orange[100],
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    _isPredictionPhase ? Icons.psychology : Icons.edit,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _isPredictionPhase
+                        ? 'Phase: Stiche ansagen'
+                        : 'Phase: Stiche eintragen',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
           Expanded(
@@ -400,7 +478,8 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
                             children: [
                               Text(
                                 player.name,
-                                style: const TextStyle(fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
                               ),
                               Text(
                                 'Σ ${_getTotalScore(player.id!)}',
@@ -415,7 +494,9 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
                       }),
                     ],
                     rows: [
-                      for (int round = 1; round <= _currentRound && round <= _maxRounds; round++)
+                      for (int round = 1;
+                          round <= _currentRound && round <= _maxRounds;
+                          round++)
                         DataRow(
                           cells: [
                             DataCell(Text('$round')),
@@ -424,21 +505,22 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
                               if (data == null) {
                                 return const DataCell(Text('-'));
                               }
-                              
+
                               String displayText;
                               if (data.actual == null) {
                                 displayText = '${data.prediction}?';
                               } else {
-                                displayText = '${data.prediction}/${data.actual}\n${data.score}';
+                                displayText =
+                                    '${data.prediction}/${data.actual}\n${data.score}';
                               }
-                              
+
                               Color? bgColor;
                               if (data.actual != null) {
                                 bgColor = data.prediction == data.actual
                                     ? Colors.green[100]
                                     : Colors.red[100];
                               }
-                              
+
                               return DataCell(
                                 Container(
                                   color: bgColor,
@@ -469,9 +551,7 @@ class _WizardGameScreenState extends State<WizardGameScreen> {
                   minimumSize: const Size(double.infinity, 50),
                 ),
                 child: Text(
-                  _isPredictionPhase
-                      ? 'Ansagen eingeben'
-                      : 'Stiche eingeben',
+                  _isPredictionPhase ? 'Ansagen eingeben' : 'Stiche eingeben',
                   style: const TextStyle(fontSize: 18),
                 ),
               ),

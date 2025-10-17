@@ -46,11 +46,89 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> {
     });
   }
 
+  (int, int) _getPlayerRequirements() {
+    switch (_selectedGameType!) {
+      case GameType.wizard:
+        return (3, 6);
+      case GameType.skyjo:
+        return (2, 8);
+      case GameType.kniffel:
+        return (1, 10);
+    }
+  }
+
+  String _getPlayerCountText() {
+    final count = _selectedPlayers.length;
+    final (min, max) = _getPlayerRequirements();
+
+    if (count < min) {
+      return 'Noch ${min - count} Spieler benötigt';
+    } else if (count > max) {
+      return '${count - max} Spieler zu viel!';
+    } else {
+      return '$count/$max Spieler';
+    }
+  }
+
+  Color _getPlayerCountColor() {
+    final count = _selectedPlayers.length;
+    final (min, max) = _getPlayerRequirements();
+
+    if (count < min || count > max) {
+      return Colors.red[200]!;
+    } else {
+      return Colors.green[200]!;
+    }
+  }
+
+  String? _validateGameRules() {
+    if (_selectedGameType == null) {
+      return 'Bitte wähle ein Spiel aus';
+    }
+
+    final playerCount = _selectedPlayers.length;
+
+    switch (_selectedGameType!) {
+      case GameType.wizard:
+        if (playerCount < 3) {
+          return 'Wizard benötigt mindestens 3 Spieler';
+        }
+        if (playerCount > 6) {
+          return 'Wizard kann maximal mit 6 Spielern gespielt werden';
+        }
+        break;
+
+      case GameType.skyjo:
+        if (playerCount < 2) {
+          return 'Skyjo benötigt mindestens 2 Spieler';
+        }
+        if (playerCount > 8) {
+          return 'Skyjo kann maximal mit 8 Spielern gespielt werden';
+        }
+        break;
+
+      case GameType.kniffel:
+        if (playerCount < 1) {
+          return 'Kniffel benötigt mindestens 1 Spieler';
+        }
+        if (playerCount > 10) {
+          return 'Kniffel kann maximal mit 10 Spielern gespielt werden';
+        }
+        break;
+    }
+
+    return null; // Alles OK
+  }
+
   Future<void> _startGame() async {
-    if (_selectedGameType == null || _selectedPlayers.length < 2) {
+    // Validiere die Spielregeln
+    final validationError = _validateGameRules();
+    if (validationError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Bitte wähle ein Spiel und mindestens 2 Spieler aus'),
+        SnackBar(
+          content: Text(validationError),
+          backgroundColor: Colors.red[700],
+          duration: const Duration(seconds: 4),
         ),
       );
       return;
@@ -168,12 +246,27 @@ class _GameSelectionScreenState extends State<GameSelectionScreen> {
                             setState(() => _selectedGameType = GameType.wizard),
                       ),
                       const SizedBox(height: 32),
-                      const Text(
-                        'Wähle Spieler (mind. 2):',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          const Text(
+                            'Wähle Spieler:',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (_selectedGameType != null)
+                            Chip(
+                              label: Text(
+                                _getPlayerCountText(),
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              backgroundColor: _getPlayerCountColor(),
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 8),
+                            ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       ..._allPlayers.map((player) {
@@ -233,6 +326,17 @@ class _GameTypeCard extends StatelessWidget {
     }
   }
 
+  String _getPlayerRequirement() {
+    switch (gameType) {
+      case GameType.wizard:
+        return '3-6 Spieler';
+      case GameType.skyjo:
+        return '2-8 Spieler';
+      case GameType.kniffel:
+        return '1-10 Spieler';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -252,14 +356,39 @@ class _GameTypeCard extends StatelessWidget {
                     isSelected ? Theme.of(context).colorScheme.primary : null,
               ),
               const SizedBox(width: 16),
-              Text(
-                gameType.displayName,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      gameType.displayName,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.people,
+                          size: 16,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _getPlayerRequirement(),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
-              const Spacer(),
               if (isSelected)
                 Icon(
                   Icons.check_circle,
