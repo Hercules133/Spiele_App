@@ -8,19 +8,25 @@ import '../models/game_score.dart';
 class DatabaseService {
   static final DatabaseService instance = DatabaseService._init();
   static Database? _database;
+  String? dbFileOverride;
 
   DatabaseService._init();
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('spiele_app.db');
+    final fileName = dbFileOverride ?? 'spiele_app.db';
+    _database = await _initDB(fileName);
     return _database!;
   }
 
   Future<Database> _initDB(String filePath) async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, filePath);
-
+    String path;
+    if (filePath == ':memory:') {
+      path = filePath;
+    } else {
+      final dbPath = await getDatabasesPath();
+      path = join(dbPath, filePath);
+    }
     return await openDatabase(
       path,
       version: 1,

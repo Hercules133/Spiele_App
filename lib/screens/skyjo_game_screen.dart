@@ -83,6 +83,7 @@ class _SkyjoGameScreenState extends State<SkyjoGameScreen> {
     }
 
     // Save scores
+    bool gameOver = false;
     for (var player in widget.players) {
       final score = int.parse(_controllers[player.id!]!.text.trim());
       await _dbService.createGameScore(
@@ -95,6 +96,10 @@ class _SkyjoGameScreenState extends State<SkyjoGameScreen> {
       );
       _roundScores[player.id!]!.add(score);
       _controllers[player.id!]!.clear();
+      // Prüfe ob ein Spieler über 100 Punkte hat
+      if (_getTotalScore(player.id!) > 100) {
+        gameOver = true;
+      }
     }
 
     setState(() {
@@ -102,9 +107,13 @@ class _SkyjoGameScreenState extends State<SkyjoGameScreen> {
     });
 
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Runde gespeichert!')),
-    );
+    if (gameOver) {
+      await _finishGame();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Runde gespeichert!')),
+      );
+    }
   }
 
   Future<void> _finishGame() async {
